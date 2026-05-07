@@ -6,6 +6,9 @@ import { GameView } from '../views/GameView';
 import { MatchRuleService } from '../services/MatchRuleService';
 import { UndoManager } from '../managers/UndoManager';
 import { UndoModel } from '../models/UndoModel';
+import { LevelConfigLoader } from '../configs/loaders/LevelConfigLoader';
+
+
 
 
 const { ccclass, property } = _decorator;
@@ -48,8 +51,10 @@ export class GameTestController extends Component {
             return;
         }
 
+        
         this.undoButtonNode.on(Input.EventType.TOUCH_END, this.handleUndoClicked, this);
-                
+        
+        this.loadLevelConfigForDebug();   
     }
 
     protected onDestroy(): void {
@@ -305,6 +310,18 @@ export class GameTestController extends Component {
         console.log(
             `[GameTestController] undo move: ${undoRecord.movedCardId}, ${this.getAreaName(undoRecord.toArea)} -> ${this.getAreaName(undoRecord.fromArea)}`,
         );
+    }
+
+    private async loadLevelConfigForDebug(): Promise<void> {
+        try {
+            const levelConfig = await LevelConfigLoader.loadLevelConfig('configs/levels/level_001');
+
+            console.log('[GameTestController] level loaded.');
+            console.log(`[GameTestController] Playfield count: ${levelConfig.Playfield.length}`);
+            console.log(`[GameTestController] Stack count: ${levelConfig.Stack.length}`);
+        } catch (error) {
+            console.error('[GameTestController] load level config failed:', error);
+        }
     }
 
 }
