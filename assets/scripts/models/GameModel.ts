@@ -49,14 +49,21 @@ export class GameModel {
     }
 
     public moveCardToArea(cardId: string, targetArea: CardAreaType): boolean {
-        const card = this.getCardById(cardId);
+    const cardIndex = this.cards.findIndex((card) => card.id === cardId);
 
-        if (!card) {
-            return false;
-        }
+    if (cardIndex < 0) {
+        return false;
+    }
 
-        card.area = targetArea;
-        return true;
+    const card = this.cards[cardIndex];
+    card.area = targetArea;
+
+    if (targetArea === CardAreaType.Tray) {
+        this.cards.splice(cardIndex, 1);
+        this.cards.push(card);
+    }
+
+    return true;
     }
 
     public updateCardPosition(cardId: string, position: Readonly<{ x: number; y: number; z: number }>): boolean {

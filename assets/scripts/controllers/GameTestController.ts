@@ -31,37 +31,37 @@ export class GameTestController extends Component {
     }
 
     private handleCardClicked(cardId: string): void {
-    if (!this.gameModel) {
-        console.error('[GameTestController] gameModel is missing.');
-        return;
-    }
-
-    const cardModel = this.gameModel.getCardById(cardId);
-
-    if (!cardModel) {
-        console.warn(`[GameTestController] card not found: ${cardId}`);
-        return;
-    }
-
-    console.log(`[GameTestController] clicked card: ${cardId}, area: ${this.getAreaName(cardModel.area)}`);
-
-    switch (cardModel.area) {
-        case CardAreaType.PlayField:
-            this.handlePlayFieldCardClicked(cardModel);
-            break;
-
-        case CardAreaType.Stack:
-            console.log('[GameTestController] Stack click will be handled in next stage.');
-            break;
-
-        case CardAreaType.Tray:
-            console.log('[GameTestController] Tray card clicked, no action.');
-            break;
-
-        default:
-            console.warn('[GameTestController] unknown card area.');
-            break;
+        if (!this.gameModel) {
+            console.error('[GameTestController] gameModel is missing.');
+            return;
         }
+
+        const cardModel = this.gameModel.getCardById(cardId);
+
+        if (!cardModel) {
+            console.warn(`[GameTestController] card not found: ${cardId}`);
+            return;
+        }
+
+        console.log(`[GameTestController] clicked card: ${cardId}, area: ${this.getAreaName(cardModel.area)}`);
+
+        switch (cardModel.area) {
+            case CardAreaType.PlayField:
+                this.handlePlayFieldCardClicked(cardModel);
+                break;
+
+            case CardAreaType.Stack:
+                this.handleStackCardClicked(cardModel);
+                break;
+
+            case CardAreaType.Tray:
+                console.log('[GameTestController] Tray card clicked, no action.');
+                break;
+
+            default:
+                console.warn('[GameTestController] unknown card area.');
+                break;
+            }
     }
 
     private getAreaName(area: CardAreaType): string {
@@ -159,4 +159,49 @@ export class GameTestController extends Component {
         `[GameTestController] matched card moved to tray: ${cardModel.id} -> ${trayTopCard.id}`,
         );
     }
+
+
+    private handleStackCardClicked(cardModel: CardModel): void {
+    if (!this.gameModel) {
+        return;
+    }
+
+    if (!this.gameView) {
+        console.error('[GameTestController] gameView is missing.');
+        return;
+    }
+
+    const stackTopCard = this.gameModel.getStackTopCard();
+
+    if (!stackTopCard) {
+        console.warn('[GameTestController] stack top card is missing.');
+        return;
+    }
+
+    if (stackTopCard.id !== cardModel.id) {
+        console.log(
+            `[GameTestController] clicked stack card is not top card: ${cardModel.id}`,
+        );
+        return;
+    }
+
+    const trayTopCard = this.gameModel.getTrayTopCard();
+
+    if (!trayTopCard) {
+        console.warn('[GameTestController] tray top card is missing.');
+        return;
+    }
+
+    const targetPosition = trayTopCard.position.clone();
+
+    this.gameModel.moveCardToArea(cardModel.id, CardAreaType.Tray);
+    this.gameModel.updateCardPosition(cardModel.id, targetPosition);
+
+    this.gameView.moveCardToPosition(cardModel.id, targetPosition);
+
+    console.log(
+        `[GameTestController] stack card moved to tray: ${cardModel.id} -> ${trayTopCard.id}`,
+    );
+    }
+
 }
