@@ -3,6 +3,8 @@ import { CardAreaType, CardFaceType, CardSuitType } from '../models/CardEnums';
 import { CardModel } from '../models/CardModel';
 import { GameModel } from '../models/GameModel';
 import { GameView } from '../views/GameView';
+import { MatchRuleService } from '../services/MatchRuleService';
+
 
 const { ccclass, property } = _decorator;
 
@@ -29,24 +31,37 @@ export class GameTestController extends Component {
     }
 
     private handleCardClicked(cardId: string): void {
-        if (!this.gameModel) {
-            console.error('[GameTestController] gameModel is missing.');
-            return;
+    if (!this.gameModel) {
+        console.error('[GameTestController] gameModel is missing.');
+        return;
+    }
+
+    const cardModel = this.gameModel.getCardById(cardId);
+
+    if (!cardModel) {
+        console.warn(`[GameTestController] card not found: ${cardId}`);
+        return;
+    }
+
+    console.log(`[GameTestController] clicked card: ${cardId}, area: ${this.getAreaName(cardModel.area)}`);
+
+    switch (cardModel.area) {
+        case CardAreaType.PlayField:
+            this.handlePlayFieldCardClicked(cardModel);
+            break;
+
+        case CardAreaType.Stack:
+            console.log('[GameTestController] Stack click will be handled in next stage.');
+            break;
+
+        case CardAreaType.Tray:
+            console.log('[GameTestController] Tray card clicked, no action.');
+            break;
+
+        default:
+            console.warn('[GameTestController] unknown card area.');
+            break;
         }
-
-        const cardModel = this.gameModel.getCardById(cardId);
-
-        if (!cardModel) {
-            console.warn('[GameTestController] card not found:', cardId);
-            return;
-        }
-
-        console.log(
-            '[GameTestController] clicked card:',
-            cardId,
-            'area:',
-            this.getAreaName(cardModel.area),
-        );
     }
 
     private getAreaName(area: CardAreaType): string {
@@ -105,5 +120,43 @@ export class GameTestController extends Component {
         ];
 
         return new GameModel(cards);
+    }
+
+    private handlePlayFieldCardClicked(cardModel: CardModel): void {
+    if (!this.gameModel) {
+        return;
+    }
+
+    if (!this.gameView) {
+        console.error('[GameTestController] gameView is missing.');
+        return;
+    }
+
+    const trayTopCard = this.gameModel.getTrayTopCard();
+
+    if (!trayTopCard) {
+        console.warn('[GameTestController] tray top card is missing.');
+        return;
+    }
+
+    const canMatch = MatchRuleService.canMatchWithTrayTop(cardModel, trayTopCard);
+
+    if (!canMatch) {
+        console.log(
+            `[GameTestController] card cannot match tray top: ${cardModel.id} -> ${trayTopCard.id}`,
+        );
+        return;
+    }
+
+    const targetPosition = trayTopCard.position.clone();
+
+    this.gameModel.moveCardToArea(cardModel.id, CardAreaType.Tray);
+    this.gameModel.updateCardPosition(cardModel.id, targetPosition);
+
+    this.gameView.moveCardToPosition(cardModel.id, targetPosition);
+
+    console.log(
+        `[GameTestController] matched card moved to tray: ${cardModel.id} -> ${trayTopCard.id}`,
+        );
     }
 }

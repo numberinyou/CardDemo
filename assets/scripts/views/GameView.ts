@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Prefab, instantiate } from 'cc';
+import { _decorator, Component, Node, Prefab, instantiate, Vec3, tween } from 'cc';
 import { CardResConfig } from '../configs/CardResConfig';
 import { CardModel } from '../models/CardModel';
 import { GameModel } from '../models/GameModel';
@@ -126,4 +126,28 @@ export class GameView extends Component {
     public getCardView(cardId: string): CardView | null {
         return this.cardViewMap.get(cardId) ?? null;
     }
+
+
+    public moveCardToPosition(cardId: string, targetPosition: Vec3, onComplete?: () => void): void {
+    const cardView = this.getCardView(cardId);
+
+    if (!cardView) {
+        console.warn(`[GameView] card view not found: ${cardId}`);
+        return;
+    }
+
+    if (this.cardLayer) {
+        cardView.node.setSiblingIndex(this.cardLayer.children.length - 1);
+    }
+
+    tween(cardView.node)
+        .to(0.2, { position: targetPosition })
+        .call(() => {
+            if (onComplete) {
+                onComplete();
+            }
+        })
+        .start();
+    }
+
 }
