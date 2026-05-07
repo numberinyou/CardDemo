@@ -1,4 +1,4 @@
-import { _decorator, Component, Sprite, SpriteFrame, Node } from 'cc';
+import { _decorator, Component, Sprite, SpriteFrame, Node, input, Input, EventTouch } from 'cc';
 
 const { ccclass, property } = _decorator;
 
@@ -34,9 +34,22 @@ export class CardView extends Component {
     })
     public backSprite: Sprite | null = null;
 
-    /**
-     * 设置卡牌正面资源。
-     */
+    private cardId: string = '';
+    private clickCallback: ((cardId: string) => void) | null = null;
+
+    protected onEnable(): void {
+        this.node.on(Input.EventType.TOUCH_END, this.onTouchEnd, this);
+    }
+
+    protected onDisable(): void {
+        this.node.off(Input.EventType.TOUCH_END, this.onTouchEnd, this);
+    }
+
+    public init(cardId: string, clickCallback: (cardId: string) => void): void {
+        this.cardId = cardId;
+        this.clickCallback = clickCallback;
+    }
+
     public setFront(
         baseFrame: SpriteFrame | null,
         bigNumberFrame: SpriteFrame | null,
@@ -60,24 +73,34 @@ export class CardView extends Component {
         }
     }
 
-    /**
-     * 设置卡牌背面资源。
-     */
     public setBack(backFrame: SpriteFrame | null): void {
         if (this.backSprite) {
             this.backSprite.spriteFrame = backFrame;
         }
     }
 
-    /**
-     * 设置是否显示背面。
-     */
     public setFaceDown(isFaceDown: boolean): void {
         this.setNodeActive(this.baseSprite?.node, !isFaceDown);
         this.setNodeActive(this.bigNumberSprite?.node, !isFaceDown);
         this.setNodeActive(this.smallNumberSprite?.node, !isFaceDown);
         this.setNodeActive(this.suitSprite?.node, !isFaceDown);
         this.setNodeActive(this.backSprite?.node, isFaceDown);
+    }
+
+    private onTouchEnd(event: EventTouch): void {
+        event.propagationStopped = true;
+
+        if (!this.cardId) {
+            console.warn('[CardView] cardId is empty.');
+            return;
+        }
+
+        if (!this.clickCallback) {
+            console.warn('[CardView] clickCallback is missing.');
+            return;
+        }
+
+        this.clickCallback(this.cardId);
     }
 
     private setNodeActive(node: Node | undefined, active: boolean): void {

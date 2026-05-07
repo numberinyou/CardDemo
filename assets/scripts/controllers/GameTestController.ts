@@ -24,7 +24,45 @@ export class GameTestController extends Component {
             return;
         }
 
+        this.gameView.setCardClickCallback(this.handleCardClicked.bind(this));
         this.gameView.renderGame(this.gameModel);
+    }
+
+    private handleCardClicked(cardId: string): void {
+        if (!this.gameModel) {
+            console.error('[GameTestController] gameModel is missing.');
+            return;
+        }
+
+        const cardModel = this.gameModel.getCardById(cardId);
+
+        if (!cardModel) {
+            console.warn('[GameTestController] card not found:', cardId);
+            return;
+        }
+
+        console.log(
+            '[GameTestController] clicked card:',
+            cardId,
+            'area:',
+            this.getAreaName(cardModel.area),
+        );
+    }
+
+    private getAreaName(area: CardAreaType): string {
+        switch (area) {
+            case CardAreaType.PlayField:
+                return 'PlayField';
+
+            case CardAreaType.Stack:
+                return 'Stack';
+
+            case CardAreaType.Tray:
+                return 'Tray';
+
+            default:
+                return 'Unknown';
+        }
     }
 
     private createTestGameModel(): GameModel {

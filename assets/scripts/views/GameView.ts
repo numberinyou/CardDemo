@@ -1,6 +1,5 @@
 import { _decorator, Component, Node, Prefab, instantiate } from 'cc';
 import { CardResConfig } from '../configs/CardResConfig';
-import { CardAreaType } from '../models/CardEnums';
 import { CardModel } from '../models/CardModel';
 import { GameModel } from '../models/GameModel';
 import { CardView } from './CardView';
@@ -28,6 +27,11 @@ export class GameView extends Component {
     public cardResConfig: CardResConfig | null = null;
 
     private cardViewMap: Map<string, CardView> = new Map();
+    private cardClickCallback: ((cardId: string) => void) | null = null;
+
+    public setCardClickCallback(callback: (cardId: string) => void): void {
+        this.cardClickCallback = callback;
+    }
 
     public renderGame(gameModel: GameModel): void {
         this.clearCards();
@@ -80,8 +84,21 @@ export class GameView extends Component {
             return;
         }
 
+        cardView.init(cardModel.id, this.handleCardClicked.bind(this));
+
         this.applyCardDisplay(cardView, cardModel);
         this.cardViewMap.set(cardModel.id, cardView);
+    }
+
+    private handleCardClicked(cardId: string): void {
+        console.log('[GameView] card clicked:', cardId);
+
+        if (!this.cardClickCallback) {
+            console.warn('[GameView] cardClickCallback is missing.');
+            return;
+        }
+
+        this.cardClickCallback(cardId);
     }
 
     private applyCardDisplay(cardView: CardView, cardModel: CardModel): void {
