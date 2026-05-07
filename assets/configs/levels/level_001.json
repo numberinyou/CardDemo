@@ -1,0 +1,69 @@
+{
+  "levelId": "level_001",
+  "tray": [
+    {
+      "face": "Seven",
+      "suit": "Clubs",
+      "x": -120,
+      "y": -720
+    }
+  ],
+  "playField": [
+    {
+      "face": "Eight",
+      "suit": "Diamonds",
+      "x": -320,
+      "y": 360
+    },
+    {
+      "face": "Nine",
+      "suit": "Spades",
+      "x": 0,
+      "y": 360
+    },
+    {
+      "face": "Ten",
+      "suit": "Hearts",
+      "x": 320,
+      "y": 360
+    },
+    {
+      "face": "Four",
+      "suit": "Clubs",
+      "x": -320,
+      "y": 80
+    },
+    {
+      "face": "Three",
+      "suit": "Diamonds",
+      "x": 0,
+      "y": 80
+    },
+    {
+      "face": "Two",
+      "suit": "Spades",
+      "x": 320,
+      "y": 80
+    }
+  ],
+  "stack": [
+    {
+      "face": "K",
+      "suit": "Diamonds",
+      "x": 120,
+      "y": -720
+    },
+    {
+      "face": "Q",
+      "suit": "Clubs",
+      "x": 120,
+      "y": -720
+    },
+    {
+      "face": "Five",
+      "suit": "Hearts",
+      "x": 120,
+      "y": -720
+    }
+  ]
+}
