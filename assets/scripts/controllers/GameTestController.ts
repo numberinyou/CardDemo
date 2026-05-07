@@ -139,7 +139,7 @@ export class GameTestController extends Component {
 
             new CardModel({
                 id: 'stack_hearts_a',
-                face: CardFaceType.A,
+                face: CardFaceType.Ace,
                 suit: CardSuitType.Hearts,
                 area: CardAreaType.Stack,
                 position: new Vec3(120, -720, 0),
