@@ -131,12 +131,11 @@ export class GameModelFromLevelGenerator {
      * @returns Stack 牌位置。
      */
     private static getStackCardPosition(index: number, total: number): Vec3 {
-        const topIndex = total - 1;
-        const distanceFromTop = topIndex - index;
-        const offsetY = distanceFromTop * GameLayoutConst.StackVisibleOffsetY;
+        const offsetX = index * GameLayoutConst.StackVisibleOffsetX;
+        const offsetY = index * GameLayoutConst.StackVisibleOffsetY;
 
         return new Vec3(
-            GameLayoutConst.StackBasePosition.x,
+            GameLayoutConst.StackBasePosition.x + offsetX,
             GameLayoutConst.StackBasePosition.y + offsetY,
             GameLayoutConst.StackBasePosition.z,
         );

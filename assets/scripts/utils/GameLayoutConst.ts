@@ -12,10 +12,10 @@ export class GameLayoutConst {
     public static readonly DesignHeight = 2080;
 
     /**
-     * Stack 备用牌堆基础位置。
+     * Stack 最底层牌的基础位置。
      * 需求要求 Stack 在左侧。
      */
-    public static readonly StackBasePosition = new Vec3(-260, -760, 0);
+    public static readonly StackBasePosition = new Vec3(-320, -760, 0);
 
     /**
      * Tray 底牌堆基础位置。
@@ -24,8 +24,15 @@ export class GameLayoutConst {
     public static readonly TrayBasePosition = new Vec3(260, -760, 0);
 
     /**
-     * Stack 叠牌时，每张牌向上露出的距离。
-     * 这样下一张牌的左上角 small 数字可以露出来。
+     * Stack 叠牌时，每向上一层向右偏移的距离。
+     * 这里先按大约半张牌宽处理，方便露出下方牌的大半或半个牌面。
      */
-    public static readonly StackVisibleOffsetY = 42;
+    public static readonly StackVisibleOffsetX = 90;
+
+    /**
+     * Stack 叠牌时的纵向偏移。
+     * 当前需求主要是向右展开，所以这里先保持 0。
+     * 如果后面想做一点斜向层叠，可以改成 6、8 之类的小值。
+     */
+    public static readonly StackVisibleOffsetY = 0;
 }

@@ -1,60 +1,57 @@
 import { _decorator, Component, Vec3, Node, Input } from 'cc';
-import { CardAreaType, CardFaceType, CardSuitType,UndoOperationType, } from '../models/CardEnums';
+import {
+    CardAreaType,
+    CardFaceType,
+    CardSuitType,
+    UndoOperationType,
+} from '../models/CardEnums';
 import { CardModel } from '../models/CardModel';
 import { GameModel } from '../models/GameModel';
-import { GameView } from '../views/GameView';
-import { MatchRuleService } from '../services/MatchRuleService';
-import { UndoManager } from '../managers/UndoManager';
 import { UndoModel } from '../models/UndoModel';
+import { UndoManager } from '../managers/UndoManager';
 import { LevelConfigLoader } from '../configs/loaders/LevelConfigLoader';
 import { GameModelFromLevelGenerator } from '../services/GameModelFromLevelGenerator';
-
-
+import { MatchRuleService } from '../services/MatchRuleService';
+import { GameView } from '../views/GameView';
 
 const { ccclass, property } = _decorator;
 
+/**
+ * 游戏测试控制器。
+ *
+ * 当前阶段负责：
+ * 1. 加载关卡配置。
+ * 2. 生成运行时 GameModel。
+ * 3. 初始化 GameView。
+ * 4. 处理卡牌点击、匹配移动、Stack 翻牌和 Undo 回退。
+ *
+ * 后续可以重命名为 GameController。
+ */
 @ccclass('GameTestController')
 export class GameTestController extends Component {
+    @property({
+        tooltip: 'resources 目录下的关卡配置路径，不需要扩展名',
+    })
+    public levelConfigPath: string = 'configs/levels/level_001';
+
     @property({
         type: GameView,
         tooltip: '游戏视图组件',
     })
     public gameView: GameView | null = null;
 
-    private gameModel: GameModel | null = null;
-
-
-
     @property({
-    type: Node,
-    tooltip: '回退按钮节点',
+        type: Node,
+        tooltip: '回退按钮节点',
     })
     public undoButtonNode: Node | null = null;
 
+    private gameModel: GameModel | null = null;
     private undoManager: UndoManager = new UndoManager();
 
-
-
     protected start(): void {
-        this.gameModel = this.createTestGameModel();
-
-        if (!this.gameView) {
-            console.error('[GameTestController] gameView is missing.');
-            return;
-        }
-
-        this.gameView.setCardClickCallback(this.handleCardClicked.bind(this));
-        this.gameView.renderGame(this.gameModel);
-
-        if (!this.undoButtonNode) {
-            console.warn('[GameTestController] undoButtonNode is missing.');
-            return;
-        }
-
-        
-        this.undoButtonNode.on(Input.EventType.TOUCH_END, this.handleUndoClicked, this);
-        
-        this.loadLevelConfigForDebug();   
+        this.bindUndoButton();
+        void this.startGame();
     }
 
     protected onDestroy(): void {
@@ -63,6 +60,53 @@ export class GameTestController extends Component {
         }
     }
 
+    /**
+     * 启动游戏。
+     * 从关卡配置加载数据，生成 GameModel，并交给 GameView 渲染。
+     */
+    private async startGame(): Promise<void> {
+        if (!this.gameView) {
+            console.error('[GameTestController] gameView is missing.');
+            return;
+        }
+
+        try {
+            const levelConfig = await LevelConfigLoader.loadLevelConfig(this.levelConfigPath);
+
+            this.gameModel = GameModelFromLevelGenerator.generate(levelConfig);
+            this.undoManager.clear();
+
+            this.gameView.setCardClickCallback(this.handleCardClicked.bind(this));
+            this.gameView.renderGame(this.gameModel);
+
+            console.log('[GameTestController] game started from level config.');
+            console.log(`[GameTestController] all cards count: ${this.gameModel.cards.length}`);
+            console.log(`[GameTestController] playfield count: ${this.gameModel.getPlayFieldCards().length}`);
+            console.log(`[GameTestController] stack count: ${this.gameModel.getStackCards().length}`);
+            console.log(`[GameTestController] tray count: ${this.gameModel.getTrayCards().length}`);
+        } catch (error) {
+            console.error('[GameTestController] start game failed:', error);
+        }
+    }
+
+    /**
+     * 绑定回退按钮。
+     */
+    private bindUndoButton(): void {
+        if (!this.undoButtonNode) {
+            console.warn('[GameTestController] undoButtonNode is missing.');
+            return;
+        }
+
+        this.undoButtonNode.off(Input.EventType.TOUCH_END, this.handleUndoClicked, this);
+        this.undoButtonNode.on(Input.EventType.TOUCH_END, this.handleUndoClicked, this);
+    }
+
+    /**
+     * 处理卡牌点击事件。
+     *
+     * @param cardId 被点击的卡牌 id。
+     */
     private handleCardClicked(cardId: string): void {
         if (!this.gameModel) {
             console.error('[GameTestController] gameModel is missing.');
@@ -76,7 +120,9 @@ export class GameTestController extends Component {
             return;
         }
 
-        console.log(`[GameTestController] clicked card: ${cardId}, area: ${this.getAreaName(cardModel.area)}`);
+        console.log(
+            `[GameTestController] clicked card: ${cardId}, area: ${this.getAreaName(cardModel.area)}`,
+        );
 
         switch (cardModel.area) {
             case CardAreaType.PlayField:
@@ -94,67 +140,14 @@ export class GameTestController extends Component {
             default:
                 console.warn('[GameTestController] unknown card area.');
                 break;
-            }
-    }
-
-    private getAreaName(area: CardAreaType): string {
-        switch (area) {
-            case CardAreaType.PlayField:
-                return 'PlayField';
-
-            case CardAreaType.Stack:
-                return 'Stack';
-
-            case CardAreaType.Tray:
-                return 'Tray';
-
-            default:
-                return 'Unknown';
         }
     }
 
-    private createTestGameModel(): GameModel {
-        const cards: CardModel[] = [
-            new CardModel({
-                id: 'tray_clubs_4',
-                face: CardFaceType.Four,
-                suit: CardSuitType.Clubs,
-                area: CardAreaType.Tray,
-                position: new Vec3(-120, -720, 0),
-                isFaceDown: false,
-            }),
-
-            new CardModel({
-                id: 'playfield_diamonds_3',
-                face: CardFaceType.Three,
-                suit: CardSuitType.Diamonds,
-                area: CardAreaType.PlayField,
-                position: new Vec3(-160, 220, 0),
-                isFaceDown: false,
-            }),
-
-            new CardModel({
-                id: 'playfield_spades_2',
-                face: CardFaceType.Two,
-                suit: CardSuitType.Spades,
-                area: CardAreaType.PlayField,
-                position: new Vec3(160, 220, 0),
-                isFaceDown: false,
-            }),
-
-            new CardModel({
-                id: 'stack_hearts_a',
-                face: CardFaceType.Ace,
-                suit: CardSuitType.Hearts,
-                area: CardAreaType.Stack,
-                position: new Vec3(120, -720, 0),
-                isFaceDown: false,
-            }),
-        ];
-
-        return new GameModel(cards);
-    }
-
+    /**
+     * 处理主牌区卡牌点击。
+     *
+     * @param cardModel 被点击的主牌区卡牌。
+     */
     private handlePlayFieldCardClicked(cardModel: CardModel): void {
         if (!this.gameModel) {
             return;
@@ -183,7 +176,6 @@ export class GameTestController extends Component {
 
         const targetPosition = trayTopCard.position.clone();
 
-
         this.recordMoveUndo(cardModel, CardAreaType.Tray, targetPosition);
 
         this.gameModel.moveCardToArea(cardModel.id, CardAreaType.Tray);
@@ -193,10 +185,16 @@ export class GameTestController extends Component {
 
         console.log(
             `[GameTestController] matched card moved to tray: ${cardModel.id} -> ${trayTopCard.id}`,
-            );
+        );
     }
 
-
+    /**
+     * 处理备用牌堆卡牌点击。
+     *
+     * 只有 Stack 顶部牌可以移动到 Tray。
+     *
+     * @param cardModel 被点击的 Stack 卡牌。
+     */
     private handleStackCardClicked(cardModel: CardModel): void {
         if (!this.gameModel) {
             return;
@@ -240,17 +238,15 @@ export class GameTestController extends Component {
         console.log(
             `[GameTestController] stack card moved to tray: ${cardModel.id} -> ${trayTopCard.id}`,
         );
-
-        
     }
 
-    
-
-
-
-
-
-
+    /**
+     * 记录卡牌移动回退数据。
+     *
+     * @param cardModel 即将移动的卡牌。
+     * @param toArea 目标区域。
+     * @param toPosition 目标位置。
+     */
     private recordMoveUndo(cardModel: CardModel, toArea: CardAreaType, toPosition: Vec3): void {
         const undoRecord = new UndoModel({
             operationType: UndoOperationType.MoveCard,
@@ -268,7 +264,9 @@ export class GameTestController extends Component {
         );
     }
 
-
+    /**
+     * 处理回退按钮点击。
+     */
     private handleUndoClicked(): void {
         if (!this.gameModel) {
             console.error('[GameTestController] gameModel is missing.');
@@ -312,29 +310,25 @@ export class GameTestController extends Component {
         );
     }
 
-    private async loadLevelConfigForDebug(): Promise<void> {
-        try {
-            const levelConfig = await LevelConfigLoader.loadLevelConfig('configs/levels/level_001');
-            const generatedGameModel = GameModelFromLevelGenerator.generate(levelConfig);
+    /**
+     * 获取区域名称，方便调试日志显示。
+     *
+     * @param area 卡牌区域枚举。
+     * @returns 区域名称。
+     */
+    private getAreaName(area: CardAreaType): string {
+        switch (area) {
+            case CardAreaType.PlayField:
+                return 'PlayField';
 
-            console.log('[GameTestController] level loaded.');
-            console.log(`[GameTestController] Playfield config count: ${levelConfig.Playfield.length}`);
-            console.log(`[GameTestController] Stack config count: ${levelConfig.Stack.length}`);
+            case CardAreaType.Stack:
+                return 'Stack';
 
-            console.log('[GameTestController] generated game model.');
-            console.log(`[GameTestController] all cards count: ${generatedGameModel.cards.length}`);
-            console.log(`[GameTestController] playfield count: ${generatedGameModel.getPlayFieldCards().length}`);
-            console.log(`[GameTestController] stack count: ${generatedGameModel.getStackCards().length}`);
-            console.log(`[GameTestController] tray count: ${generatedGameModel.getTrayCards().length}`);
+            case CardAreaType.Tray:
+                return 'Tray';
 
-            const stackTopCard = generatedGameModel.getStackTopCard();
-            const trayTopCard = generatedGameModel.getTrayTopCard();
-
-            console.log(`[GameTestController] stack top card: ${stackTopCard?.id ?? 'none'}`);
-            console.log(`[GameTestController] tray top card: ${trayTopCard?.id ?? 'none'}`);
-        } catch (error) {
-            console.error('[GameTestController] load level config failed:', error);
+            default:
+                return 'Unknown';
         }
     }
-
 }
