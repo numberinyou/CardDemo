@@ -7,7 +7,7 @@ import { MatchRuleService } from '../services/MatchRuleService';
 import { UndoManager } from '../managers/UndoManager';
 import { UndoModel } from '../models/UndoModel';
 import { LevelConfigLoader } from '../configs/loaders/LevelConfigLoader';
-
+import { GameModelFromLevelGenerator } from '../services/GameModelFromLevelGenerator';
 
 
 
@@ -315,10 +315,23 @@ export class GameTestController extends Component {
     private async loadLevelConfigForDebug(): Promise<void> {
         try {
             const levelConfig = await LevelConfigLoader.loadLevelConfig('configs/levels/level_001');
+            const generatedGameModel = GameModelFromLevelGenerator.generate(levelConfig);
 
             console.log('[GameTestController] level loaded.');
-            console.log(`[GameTestController] Playfield count: ${levelConfig.Playfield.length}`);
-            console.log(`[GameTestController] Stack count: ${levelConfig.Stack.length}`);
+            console.log(`[GameTestController] Playfield config count: ${levelConfig.Playfield.length}`);
+            console.log(`[GameTestController] Stack config count: ${levelConfig.Stack.length}`);
+
+            console.log('[GameTestController] generated game model.');
+            console.log(`[GameTestController] all cards count: ${generatedGameModel.cards.length}`);
+            console.log(`[GameTestController] playfield count: ${generatedGameModel.getPlayFieldCards().length}`);
+            console.log(`[GameTestController] stack count: ${generatedGameModel.getStackCards().length}`);
+            console.log(`[GameTestController] tray count: ${generatedGameModel.getTrayCards().length}`);
+
+            const stackTopCard = generatedGameModel.getStackTopCard();
+            const trayTopCard = generatedGameModel.getTrayTopCard();
+
+            console.log(`[GameTestController] stack top card: ${stackTopCard?.id ?? 'none'}`);
+            console.log(`[GameTestController] tray top card: ${trayTopCard?.id ?? 'none'}`);
         } catch (error) {
             console.error('[GameTestController] load level config failed:', error);
         }
